@@ -30,6 +30,7 @@ class TicketAPI(object):
             'status': status,
             'priority': priority,
         }
+
         data.update(kwargs)
         if 'attachments' in data:
             ticket = self._create_ticket_with_attachment(url, data)
@@ -43,9 +44,16 @@ class TicketAPI(object):
         del data['attachments']
         multipart_data = []
 
+        # support tags
+        for k, v in [(i,j) for i,j in data.items()]:
+            if type(v) == list:
+                data[k+"[]"] = v
+                data.pop(k)
+
         for attachment in attachments:
             file_name = attachment.split("/")[-1:][0]
-            multipart_data.append(('attachments[]', (file_name, open(attachment), None)))
+            multipart_data.append(('attachments[]', (file_name, open(attachment, 'rb'), None))) # support binary attachment
+
 
         ticket = self._api._post(url, data=data, files=multipart_data)
         return ticket
